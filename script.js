@@ -1,91 +1,77 @@
-let focusTime = 0;  // Total accumulated focus time (in seconds)
-let breakTime = 0;  // Total break time available (in seconds)
-let timer;          // Stores the interval
-let isFocusMode = true; // Tracks if we're in focus or break mode
-let isRunning = false; // Tracks if the timer is running
+let focusTime = 0; // Stores total focus time in seconds
+let breakTime = 0; // Stores accumulated break time in seconds
+let isFocusMode = true; // Track if in Focus Mode
+let timerInterval;
+let startTime = 0; // Track when Focus Mode starts
+let isRunning = false; // Track if timer is running
 
-const timerDisplay = document.getElementById("timer");
 const modeTitle = document.getElementById("mode-title");
+const timerDisplay = document.getElementById("timer");
 const toggleBtn = document.getElementById("toggle-btn");
 const breakBtn = document.getElementById("break-btn");
 
-// Toggle function for Start/Stop
-function toggleFocus() {
-    if (isRunning) {
-        stopTimer();
-    } else {
-        startFocus();
-    }
+function formatTime(seconds) {
+    let min = Math.floor(seconds / 60);
+    let sec = seconds % 60;
+    return `${String(min).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
 }
 
-// Starts Focus Mode (Stopwatch)
-function startFocus() {
+function startFocusMode() {
     isFocusMode = true;
-    isRunning = true;
-    modeTitle.innerText = "Focus Mode";
-    toggleBtn.innerText = "Stop";
-    clearInterval(timer);
-
-    timer = setInterval(() => {
-        focusTime++;
-        updateDisplay(focusTime);
+    modeTitle.textContent = "Focus Mode";
+    toggleBtn.textContent = "Stop";
+    breakBtn.textContent = "Break";
+    breakBtn.disabled = false;
+    startTime = Date.now();
+    
+    timerInterval = setInterval(() => {
+        let elapsedTime = Math.floor((Date.now() - startTime) / 1000);
+        timerDisplay.textContent = formatTime(elapsedTime);
     }, 1000);
 }
 
-// Stops the timer (pauses Focus or Break)
-function stopTimer() {
-    clearInterval(timer);
+function stopFocusMode() {
+    clearInterval(timerInterval);
+    let elapsedTime = Math.floor((Date.now() - startTime) / 1000);
+    focusTime += elapsedTime;
+    breakTime += Math.floor(elapsedTime / 3); // 1/3 Focus Time added to Break Time
     isRunning = false;
-    toggleBtn.innerText = "Start";
+    toggleBtn.textContent = "Start";
 }
 
-// Switch to Break Mode (Timer)
-function switchToBreak() {
-    if (isFocusMode) {
-        // Add 1/3 of focus time to break time
-        breakTime += Math.floor(focusTime / 3);
-        focusTime = 0;  // Reset focus time since it's been used
-    }
-
+function startBreakMode() {
     isFocusMode = false;
-    modeTitle.innerText = "Break Mode";
-    clearInterval(timer);
-    isRunning = false;
-    toggleBtn.innerText = "Start";
+    modeTitle.textContent = "Break Mode";
+    breakBtn.textContent = "Focus"; // Change to "Focus" button
+    toggleBtn.disabled = true; // Disable Start/Stop button
+    timerDisplay.textContent = formatTime(breakTime);
 
-    startBreak();
-}
-
-// Starts Break Mode (Countdown Timer)
-function startBreak() {
-    if (breakTime <= 0) {
-        return; // No break time available
-    }
-
-    isRunning = true;
-    toggleBtn.innerText = "Stop";
-
-    timer = setInterval(() => {
+    timerInterval = setInterval(() => {
         if (breakTime > 0) {
             breakTime--;
-            updateDisplay(breakTime);
+            timerDisplay.textContent = formatTime(breakTime);
         } else {
-            clearInterval(timer);
-            isRunning = false;
-            toggleBtn.innerText = "Start";
+            clearInterval(timerInterval);
+            breakBtn.disabled = false;
         }
     }, 1000);
 }
 
-// Update timer display in MM:SS format
-function updateDisplay(timeInSeconds) {
-    let minutes = Math.floor(timeInSeconds / 60);
-    let seconds = timeInSeconds % 60;
-    timerDisplay.innerText =
-        (minutes < 10 ? "0" : "") + minutes + ":" +
-        (seconds < 10 ? "0" : "") + seconds;
-}
+toggleBtn.addEventListener("click", () => {
+    if (isRunning) {
+        stopFocusMode();
+    } else {
+        startFocusMode();
+        isRunning = true;
+    }
+});
 
-// Assign button click events
-toggleBtn.addEventListener("click", toggleFocus);
-breakBtn.addEventListener("click", switchToBreak);
+breakBtn.addEventListener("click", () => {
+    if (isFocusMode) {
+        stopFocusMode();
+        startBreakMode();
+    } else {
+        clearInterval(timerInterval); // Stop Break Timer
+        startFocusMode(); // Switch back to Focus Mode
+    }
+});
