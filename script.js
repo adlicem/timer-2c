@@ -2,26 +2,46 @@ let focusTime = 0;  // Total accumulated focus time (in seconds)
 let breakTime = 0;  // Total break time available (in seconds)
 let timer;          // Stores the interval
 let isFocusMode = true; // Tracks if we're in focus or break mode
+let isRunning = false; // Tracks if the timer is running
 
 const timerDisplay = document.getElementById("timer");
 const modeTitle = document.getElementById("mode-title");
+const toggleBtn = document.getElementById("toggle-btn");
 const breakBtn = document.getElementById("break-btn");
+
+function toggleFocus() {
+    if (isRunning) {
+        stopTimer();
+    } else {
+        startFocus();
+    }
+}
 
 function startFocus() {
     isFocusMode = true;
+    isRunning = true;
     modeTitle.innerText = "Focus Mode";
+    toggleBtn.innerText = "Stop";
     clearInterval(timer);
-    
+
     timer = setInterval(() => {
         focusTime++;
         updateDisplay(focusTime);
     }, 1000);
 }
 
+function stopTimer() {
+    clearInterval(timer);
+    isRunning = false;
+    toggleBtn.innerText = "Start";
+}
+
 function switchToBreak() {
     isFocusMode = false;
     modeTitle.innerText = "Break Mode";
     clearInterval(timer);
+    isRunning = false;
+    toggleBtn.innerText = "Start";
 
     // Add 1/3 of focus time to break time
     breakTime += Math.floor(focusTime / 3);
